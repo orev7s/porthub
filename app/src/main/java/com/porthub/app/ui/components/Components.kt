@@ -40,6 +40,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
@@ -360,6 +361,7 @@ fun GlassButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     primary: Boolean = false,
+    enabled: Boolean = true,
 ) {
     val interaction = remember { MutableInteractionSource() }
     Box(
@@ -373,7 +375,8 @@ fun GlassButton(
                     Modifier.glass(shape = RoundedCornerShape(16.dp), shadowElevation = 0.dp)
                 },
             )
-            .clickable(interactionSource = interaction, indication = null) { onClick() }
+            .graphicsLayer { alpha = if (enabled) 1f else 0.4f }
+            .clickable(enabled = enabled, interactionSource = interaction, indication = null) { onClick() }
             .padding(PaddingValues(horizontal = 18.dp, vertical = 13.dp)),
         contentAlignment = Alignment.Center,
     ) {

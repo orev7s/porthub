@@ -270,13 +270,21 @@ fun DetailScreen(
 
                 Spacer(Modifier.height(30.dp))
 
+                // Never label a page "Download": say exactly where the button goes.
+                val apkUrl = game.downloads.firstOrNull()?.url
+                val target = apkUrl ?: game.links.releases ?: game.links.repo
+                val label = when {
+                    apkUrl != null -> "Download APK"
+                    game.links.releases != null -> "Open releases"
+                    game.links.repo != null -> "Open project"
+                    else -> "No verified link"
+                }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     GlassButton(
-                        text = if (game.downloads.isEmpty()) "Open source page" else "Download",
-                        onClick = {
-                            open(game.downloads.firstOrNull()?.url ?: game.links.releases ?: game.links.repo)
-                        },
-                        primary = true,
+                        text = label,
+                        onClick = { open(target) },
+                        primary = apkUrl != null,
+                        enabled = target != null,
                         modifier = Modifier.weight(1f),
                     )
                     GlassButton(
