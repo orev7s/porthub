@@ -4,16 +4,34 @@
   "title": "PortHub Catalog",
   "description": "One record per Android port, decompilation, recompilation or engine reimplementation.",
   "type": "object",
-  "required": ["version", "games"],
+  "required": [
+    "version",
+    "games"
+  ],
   "properties": {
-    "version": { "type": "integer", "const": 1 },
-    "generatedAt": { "type": "string", "description": "ISO-8601 timestamp of the build" },
-    "games": { "type": "array", "items": { "$ref": "#/$defs/game" } }
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "description": "ISO-8601 timestamp of the build"
+    },
+    "games": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/game"
+      }
+    }
   },
   "$defs": {
     "game": {
       "type": "object",
-      "required": ["id", "title", "links"],
+      "required": [
+        "id",
+        "title",
+        "links"
+      ],
       "additionalProperties": false,
       "properties": {
         "id": {
@@ -21,93 +39,313 @@
           "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
           "description": "Stable slug used for deep links and favourites. Never reuse."
         },
-        "title": { "type": "string", "minLength": 1 },
-        "originalTitle": { "type": "string", "description": "The retail game this port reconstructs" },
-        "year": { "type": "integer", "minimum": 1970, "maximum": 2100 },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "originalTitle": {
+          "type": "string",
+          "description": "The retail game this port reconstructs"
+        },
+        "year": {
+          "type": "integer",
+          "minimum": 1970,
+          "maximum": 2100
+        },
         "platforms": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Platforms of the ORIGINAL release: N64, PS1, PC, Saturn..."
         },
-        "developer": { "type": "string" },
+        "developer": {
+          "type": "string"
+        },
         "portType": {
           "type": "string",
-          "enum": ["recompilation", "decompilation", "engine", "source-port", "unknown"]
+          "enum": [
+            "recompilation",
+            "decompilation",
+            "engine",
+            "source-port",
+            "unknown"
+          ]
         },
         "status": {
           "type": "string",
-          "enum": ["stable", "beta", "alpha", "wip", "archived", "unknown"]
+          "enum": [
+            "stable",
+            "beta",
+            "alpha",
+            "wip",
+            "archived",
+            "unknown"
+          ]
         },
-        "engine": { "type": "string" },
-        "description": { "type": "string", "maxLength": 400 },
+        "engine": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 400
+        },
         "steamAppId": {
           "type": "integer",
           "minimum": 1,
           "description": "Appid of the ORIGINAL game on Steam. Enables official capsule art from Steam's CDN; omit when the game is not on Steam."
         },
-        "tags": { "type": "array", "items": { "type": "string" }, "maxItems": 8 },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8
+        },
         "android": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "supported": { "type": "boolean", "default": true },
-            "minAndroid": { "type": "string", "description": "e.g. 9.0" },
+            "supported": {
+              "type": "boolean",
+              "default": true
+            },
+            "minAndroid": {
+              "type": "string",
+              "description": "e.g. 9.0"
+            },
             "abis": {
               "type": "array",
-              "items": { "type": "string", "enum": ["arm64-v8a", "armeabi-v7a", "x86", "x86_64", "universal"] }
+              "items": {
+                "type": "string",
+                "enum": [
+                  "arm64-v8a",
+                  "armeabi-v7a",
+                  "x86",
+                  "x86_64",
+                  "universal"
+                ]
+              }
             },
             "requiresGameFiles": {
               "type": "string",
-              "enum": ["none", "owned", "required", "unknown"],
+              "enum": [
+                "none",
+                "owned",
+                "required",
+                "unknown"
+              ],
               "description": "none = standalone, owned = user supplies their own copy of the original game"
             },
-            "notes": { "type": "string", "maxLength": 240 }
+            "notes": {
+              "type": "string",
+              "maxLength": 240
+            }
           }
         },
         "artwork": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "cover": { "type": "string", "format": "uri" },
-            "hero": { "type": "string", "format": "uri" },
-            "screenshots": { "type": "array", "items": { "type": "string", "format": "uri" }, "maxItems": 12 },
-            "accent": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }
+            "cover": {
+              "type": "string",
+              "format": "uri"
+            },
+            "hero": {
+              "type": "string",
+              "format": "uri"
+            },
+            "screenshots": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uri"
+              },
+              "maxItems": 12
+            },
+            "accent": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
           }
         },
         "links": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "repo": { "type": "string", "format": "uri" },
-            "releases": { "type": "string", "format": "uri" },
-            "website": { "type": "string", "format": "uri" },
-            "discord": { "type": "string", "format": "uri" },
-            "wiki": { "type": "string", "format": "uri" }
+            "repo": {
+              "type": "string",
+              "format": "uri"
+            },
+            "releases": {
+              "type": "string",
+              "format": "uri"
+            },
+            "website": {
+              "type": "string",
+              "format": "uri"
+            },
+            "discord": {
+              "type": "string",
+              "format": "uri"
+            },
+            "wiki": {
+              "type": "string",
+              "format": "uri"
+            }
           }
         },
         "downloads": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["label", "url"],
+            "required": [
+              "label",
+              "url"
+            ],
             "additionalProperties": false,
             "properties": {
-              "label": { "type": "string" },
-              "kind": { "type": "string", "enum": ["apk", "zip", "store", "source"], "default": "apk" },
-              "url": { "type": "string", "format": "uri" },
-              "version": { "type": "string" },
-              "sizeMb": { "type": "number", "minimum": 0 },
-              "abi": { "type": "string" }
+              "label": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "apk",
+                  "zip",
+                  "store",
+                  "source"
+                ],
+                "default": "apk"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "version": {
+                "type": "string"
+              },
+              "sizeMb": {
+                "type": "number",
+                "minimum": 0
+              },
+              "abi": {
+                "type": "string"
+              }
             }
           }
         },
-        "license": { "type": "string", "description": "SPDX id when known" },
-        "lastUpdated": { "type": "string", "description": "YYYY-MM-DD" },
-        "stars": { "type": "integer", "minimum": 0 },
+        "license": {
+          "type": "string",
+          "description": "SPDX id when known"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "description": "YYYY-MM-DD"
+        },
+        "stars": {
+          "type": "integer",
+          "minimum": 0
+        },
         "sources": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "owner/repo pairs this record was built from. Build metadata, not shown in the app."
+        },
+        "setup": {
+          "type": "object",
+          "description": "What the user must do before the port runs: engine to install, original game to own, exact steps.",
+          "additionalProperties": false,
+          "properties": {
+            "difficulty": {
+              "type": "string",
+              "enum": [
+                "easy",
+                "medium",
+                "advanced"
+              ]
+            },
+            "minutes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "gameFiles": {
+              "type": "string",
+              "enum": [
+                "none",
+                "owned",
+                "required",
+                "unknown"
+              ]
+            },
+            "mustOwn": {
+              "type": "string",
+              "description": "Retail game the user must legally own"
+            },
+            "requiredFiles": {
+              "type": "string",
+              "description": "Exact files to supply"
+            },
+            "installPath": {
+              "type": "string",
+              "description": "Where those files go on the device"
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 12
+            },
+            "confidence": {
+              "type": "string",
+              "enum": [
+                "exact",
+                "generic"
+              ]
+            },
+            "engine": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "note": {
+                  "type": "string"
+                }
+              }
+            },
+            "buy": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "store",
+                  "url"
+                ],
+                "properties": {
+                  "store": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

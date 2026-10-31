@@ -27,6 +27,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.porthub.app.data.Game
+import com.porthub.app.data.GameFiles
 import com.porthub.app.data.PortStatus
 import com.porthub.app.data.PortType
 import com.porthub.app.ui.theme.AppText
@@ -255,6 +258,32 @@ fun GameCard(
                     style = AppText.Caption.copy(fontSize = 11.sp),
                     color = Ink.TextPrimary,
                 )
+            }
+
+            val setup = game.setup
+            val badgeIcon = when {
+                setup?.engine != null -> Icons.Rounded.Settings
+                setup?.gameFiles == GameFiles.OWNED || setup?.gameFiles == GameFiles.REQUIRED -> Icons.Rounded.Lock
+                else -> null
+            }
+            if (badgeIcon != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.45f))
+                        .border(0.7.dp, Color.White.copy(alpha = 0.12f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        badgeIcon,
+                        contentDescription = if (setup?.engine != null) "Needs an engine" else "Needs game files",
+                        tint = Color.White.copy(alpha = 0.85f),
+                        modifier = Modifier.size(11.dp),
+                    )
+                }
             }
         }
         Spacer(Modifier.height(9.dp))

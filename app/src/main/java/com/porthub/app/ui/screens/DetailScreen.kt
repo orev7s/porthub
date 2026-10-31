@@ -3,6 +3,12 @@ package com.porthub.app.ui.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -42,7 +48,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -58,6 +67,7 @@ import coil.request.ImageRequest
 import com.porthub.app.data.Game
 import com.porthub.app.data.GameFiles
 import com.porthub.app.data.PortStatus
+import com.porthub.app.data.Setup
 import com.porthub.app.data.PortType
 import com.porthub.app.ui.components.Chip
 import com.porthub.app.ui.components.CoverArt
@@ -178,35 +188,8 @@ fun DetailScreen(
 
                 Spacer(Modifier.height(18.dp))
 
-                // ------------------------------------------------ requirements
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .glass(shape = RoundedCornerShape(20.dp), shadowElevation = 0.dp)
-                        .padding(16.dp),
-                ) {
-                    Column {
-                        Text("BEFORE YOU INSTALL", style = AppText.Eyebrow)
-                        Spacer(Modifier.height(8.dp))
-                        Text(GameFiles.label(game.android.requiresGameFiles), style = AppText.Body.copy(color = Ink.TextPrimary))
-                        if (!game.android.minAndroid.isNullOrBlank() || game.android.abis.isNotEmpty()) {
-                            Spacer(Modifier.height(6.dp))
-                            Text(
-                                listOfNotNull(
-                                    game.android.minAndroid?.let { "Android $it+" },
-                                    game.android.abis.takeIf { it.isNotEmpty() }?.joinToString(", "),
-                                ).joinToString(" · "),
-                                style = AppText.Caption.copy(fontSize = 12.sp),
-                                color = Ink.TextTertiary,
-                            )
-                        }
-                        game.android.notes?.takeIf { it.isNotBlank() }?.let {
-                            Spacer(Modifier.height(6.dp))
-                            Text(it, style = AppText.Caption.copy(fontSize = 12.sp), color = Ink.TextTertiary)
-                        }
-                    }
-                }
+                // ------------------------------------------------------- setup
+                SetupCard(setup = game.setup, onOpen = { open(it) })
 
                 // ----------------------------------------------------- downloads
                 if (game.downloads.isNotEmpty()) {
@@ -369,5 +352,141 @@ private fun MetaText(label: String, value: String) {
         Text(label.uppercase(), style = AppText.Eyebrow.copy(letterSpacing = 1.sp))
         Spacer(Modifier.height(3.dp))
         Text(value, style = AppText.Caption.copy(fontSize = 13.sp), color = Ink.TextPrimary)
+    }
+}
+
+
+/* --------------------------------------------------------------- setup card */
+
+private val difficultyColor = mapOf(
+    "easy" to Ink.Positive,
+    "medium" to Ink.Accent,
+    "advanced" to Ink.Warning,
+)
+
+/**
+ * One fixed-height card on every game page: a summary that never changes size, and
+ * optional detail that only grows when the reader asks for it.
+ */
+@Composable
+private fun SetupCard(setup: Setup?, onOpen: (String?) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val chevron by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "chevron",
+    )
+
+    val headline = setup?.headline ?: "Check the project page before installing"
+    val accent = difficultyColor[setup?.difficulty ?: "medium"] ?: Ink.Accent
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .glass(shape = RoundedCornerShape(22.dp), shadowElevation = 0.dp)
+            .animateContentSize()
+            .clickable { expanded = !expanded }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("SETUP", style = AppText.Eyebrow)
+                    if (setup != null) {
+                        Spacer(Modifier.width(8.dp))
+                        Box(Modifier.size(5.dp).clip(CircleShape).background(accent))
+                        Spacer(Modifier.width(5.dp))
+                        Text(
+                            buildString {
+                                append(setup.difficulty.replaceFirstChar { it.uppercase() })
+                                setup.minutes?.let { append(" · ~").append(it).append(" min") }
+                            },
+                            style = AppText.Caption.copy(fontSize = 11.sp),
+                            color = accent,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    headline,
+                    style = AppText.CardTitle.copy(fontSize = 15.sp),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                Icons.Rounded.KeyboardArrowRight,
+                contentDescription = if (expanded) "Collapse" else "Expand",
+                tint = Ink.TextTertiary,
+                modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = chevron },
+            )
+        }
+
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            Column {
+                Spacer(Modifier.height(14.dp))
+                Box(Modifier.fillMaxWidth().height(0.7.dp).background(Color.White.copy(alpha = 0.08f)))
+                Spacer(Modifier.height(14.dp))
+
+                setup?.steps?.forEachIndexed { index, step ->
+                    Row(Modifier.padding(bottom = 10.dp)) {
+                        Box(
+                            Modifier
+                                .size(19.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.08f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                "${index + 1}",
+                                style = AppText.Caption.copy(fontSize = 10.sp),
+                                color = Ink.TextSecondary,
+                            )
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Text(step, style = AppText.Body.copy(fontSize = 13.5.sp))
+                    }
+                }
+
+                setup?.engine?.let { engine ->
+                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        GlassButton("Get ${engine.name}", onClick = { onOpen(engine.url) }, primary = true)
+                        Spacer(Modifier.width(10.dp))
+                        Column {
+                            Text(engine.name, style = AppText.Caption.copy(fontSize = 12.sp), color = Ink.TextPrimary)
+                            engine.note?.let {
+                                Text(it, style = AppText.Caption.copy(fontSize = 11.sp), color = Ink.TextTertiary)
+                            }
+                        }
+                    }
+                }
+
+                if (!setup?.buy.isNullOrEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    Text("BUY THE ORIGINAL", style = AppText.Eyebrow)
+                    Spacer(Modifier.height(7.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        setup.buy.forEach { link ->
+                            GlassButton(link.store, onClick = { onOpen(link.url) })
+                        }
+                    }
+                }
+
+                if (setup?.confidence == "generic") {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "Generated from this project's metadata — confirm the exact steps on its page.",
+                        style = AppText.Caption.copy(fontSize = 11.sp),
+                        color = Ink.TextTertiary,
+                    )
+                }
+            }
+        }
     }
 }

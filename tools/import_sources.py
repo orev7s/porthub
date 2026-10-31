@@ -23,6 +23,7 @@ import argparse
 import json
 import re
 import unicodedata
+import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -213,6 +214,7 @@ def parse_droid_recomp(src: Path) -> list[dict]:
                 "minAndroid": (app.get("min_android") or "").replace("Android", "").replace("+", "").strip() or None,
                 "abis": [a for a in app.get("architectures", []) if a in ("arm64-v8a", "armeabi-v7a", "x86_64")],
                 "requires": needs_game_files(blob),
+                "requiredFiles": (app.get("needs") or "").strip() or None,
                 "downloads": [{"label": "Latest APK", "kind": "apk", "url": app["apk_url"]}] if app.get("apk_url") else [],
                 "version": app.get("version"),
                 "stars": app.get("stars"),
@@ -249,6 +251,8 @@ def parse_ports_launcher(src: Path) -> list[dict]:
                 "license": None,
                 "android": True,
                 "requires": needs_game_files(port.get("instructions", "")),
+                "requiredFiles": _required_files(port.get("instructions", "")),
+                "androidPackage": port.get("android_package"),
                 "origin": "ports-launcher",
             }
         )
@@ -281,11 +285,130 @@ def parse_awesome(src: Path, folder: str, default_type: str, origin: str) -> lis
     return out
 
 
+# ----------------------------------------------------------------------------- setup
+
+# Engines people have to install next to the port. Only well-known projects, so the
+# link we show is the real upstream and not a guess.
+ENGINES = [
+    ("xash3d", {"name": "Xash3D FWGS", "url": "https://github.com/FWGS/xash3d-fwgs",
+                "note": "GoldSrc engine — runs Half-Life and its mods."}),
+    ("devilutionx", {"name": "DevilutionX", "url": "https://github.com/diasurgical/DevilutionX",
+                     "note": "Diablo engine."}),
+    ("scummvm", {"name": "ScummVM", "url": "https://www.scummvm.org/downloads/",
+                 "note": "Point-and-click adventure engine."}),
+    ("openmw", {"name": "OpenMW", "url": "https://github.com/OpenMW/openmw",
+                "note": "Morrowind engine."}),
+    ("fheroes2", {"name": "fheroes2", "url": "https://github.com/ihhub/fheroes2",
+                  "note": "Heroes of Might and Magic II engine."}),
+    ("vcmi", {"name": "VCMI", "url": "https://github.com/vcmi/vcmi",
+              "note": "Heroes of Might and Magic III engine."}),
+    ("openrct2", {"name": "OpenRCT2", "url": "https://github.com/OpenRCT2/OpenRCT2",
+                  "note": "RollerCoaster Tycoon 2 engine."}),
+    ("openra", {"name": "OpenRA", "url": "https://github.com/OpenRA/OpenRA",
+                "note": "Command & Conquer engine."}),
+    ("diii4a", {"name": "idTech4A++", "url": "https://github.com/glKarin/com.n0n3m4.diii4a",
+                "note": "idTech 4 engine (Doom 3, Quake 4, Prey)."}),
+    ("gzdoom", {"name": "GZDoom", "url": "https://github.com/ZDoom/gzdoom",
+                "note": "Doom engine."}),
+    ("openlara", {"name": "OpenLara", "url": "https://github.com/XProger/OpenLara",
+                  "note": "Tomb Raider engine."}),
+    ("shipwright", {"name": "Ship of Harkinian", "url": "https://github.com/HarbourMasters/Shipwright",
+                    "note": "Ocarina of Time decompilation."}),
+    ("sm64ex", {"name": "sm64ex", "url": "https://github.com/sm64pc/sm64ex",
+                "note": "Super Mario 64 decompilation."}),
+]
+
+
+def _required_files(instructions: str) -> str | None:
+    if not instructions:
+        return None
+    match = re.search(r"Required files:\s*(.+?)(?:\n\n|$)", instructions, re.S)
+    if match:
+        return clean(match.group(1), 220)
+    return None
+
+
+def build_setup(record: dict) -> dict:
+    """Turn scattered source metadata into one consistent, honest install guide."""
+    blob = " ".join(
+        str(record.get(f) or "") for f in ("repo", "title", "summary", "originalTitle")
+    ).lower()
+
+    engine = next((data for key, data in ENGINES if key in blob), None)
+    files_text = record.get("requiredFiles")
+    package = record.get("androidPackage")
+    level = record.get("requires") or "unknown"
+    if files_text and level == "unknown":
+        level = "owned"          # the source literally lists the files you must supply
+    must_own = record.get("originalTitle") or record.get("title")
+    platform = (record.get("platforms") or [None])[0]
+    if platform and len(platform) <= 6:
+        platform = platform.upper().replace("N64", "N64")
+
+    steps: list[str] = []
+
+    if level == "none":
+        steps.append("Download the APK from the project's releases page.")
+        steps.append("Install and open it — this build needs no game files.")
+        difficulty, minutes = "easy", 5
+    else:
+        own_line = f"Own a legal copy of {must_own}"
+        if platform:
+            own_line += f" ({platform})"
+        own_line += " — buy it, rip your disc, or use files you already own. The port ships no game data."
+        steps.append(own_line)
+
+        if engine:
+            steps.append(f"Get {engine['name']} if the port does not bundle it.")
+
+        steps.append("Download the port's APK from its releases page and install it.")
+
+        if files_text:
+            steps.append(f"Prepare these files: {files_text}")
+
+        if package:
+            steps.append(f"Copy them into Android/data/{package}/files — create the folders if they don't exist.")
+        else:
+            steps.append("Copy them into the folder the app asks for on first launch (usually Android/data/<package>/files).")
+
+        steps.append("Open the app, point it at that folder if prompted, and play.")
+
+        difficulty = "advanced" if engine else "medium"
+        minutes = 20 if engine else 12
+
+    buy = []
+    if level != "none" and must_own:
+        query = urllib.parse.quote(must_own)
+        buy = [
+            {"store": "Steam", "url": f"https://store.steampowered.com/search/?term={query}"},
+            {"store": "GOG", "url": f"https://www.gog.com/en/games?query={query}"},
+        ]
+
+    setup = {
+        "difficulty": difficulty,
+        "minutes": minutes,
+        "gameFiles": level,
+        "mustOwn": must_own if level != "none" else None,
+        "requiredFiles": files_text,
+        "installPath": f"Android/data/{package}/files" if package else None,
+        "steps": steps,
+        "confidence": "exact" if files_text else "generic",
+    }
+    if engine:
+        setup["engine"] = engine
+    if buy:
+        setup["buy"] = buy
+    return {k: v for k, v in setup.items() if v not in (None, [], "", {})}
+
+
 # ----------------------------------------------------------------------------- merge
 
 PRIORITY = {"openportsgames": 0, "droid-recomp": 1, "ports-launcher": 2, "awesome-android-ports": 3, "awesome-x360": 4, "awesome-rea": 5}
 
-SCALAR_FIELDS = ("originalTitle", "year", "publisher", "cover", "hero", "license", "summary", "minAndroid", "requires")
+SCALAR_FIELDS = (
+    "originalTitle", "year", "publisher", "cover", "hero", "license", "summary",
+    "minAndroid", "requires", "requiredFiles", "androidPackage",
+)
 
 
 def merge(records: list[dict]) -> list[dict]:
@@ -349,6 +472,7 @@ def to_game(record: dict) -> dict:
         "lastUpdated": None,
         "stars": record.get("stars"),
         "sources": record.get("sources") or [],
+        "setup": build_setup(record),
     }
 
     if record.get("cover"):

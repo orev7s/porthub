@@ -36,6 +36,8 @@ data class Game(
     val android: AndroidInfo = AndroidInfo(),
     val artwork: Artwork = Artwork(),
     val links: Links = Links(),
+    /** What the user has to do before the port runs. Always present in the live feed. */
+    val setup: Setup? = null,
     val downloads: List<Download> = emptyList(),
     val license: String? = null,
     val lastUpdated: String? = null,
@@ -94,6 +96,53 @@ data class Links(
     val website: String? = null,
     val discord: String? = null,
     val wiki: String? = null,
+)
+
+@Serializable
+data class Setup(
+    /** easy | medium | advanced */
+    val difficulty: String = "medium",
+    val minutes: Int? = null,
+    /** none | owned | required | unknown */
+    val gameFiles: String? = null,
+    /** The retail game the user must legally own, when files are required. */
+    val mustOwn: String? = null,
+    /** Exactly which files, e.g. "Banjo-Kazooie (USA) v1.0 ROM (.z64)". */
+    val requiredFiles: String? = null,
+    /** Where those files go, e.g. "Android/data/org.diasurgical.devilutionx/files". */
+    val installPath: String? = null,
+    val steps: List<String> = emptyList(),
+    /** exact = the source listed the files; generic = generated from project metadata. */
+    val confidence: String = "generic",
+    val engine: EngineRef? = null,
+    val buy: List<BuyLink> = emptyList(),
+) {
+    val needsAnything: Boolean
+        get() = gameFiles == GameFiles.OWNED || gameFiles == GameFiles.REQUIRED || engine != null
+
+    /** One line that fits the collapsed card, whatever the entry. */
+    val headline: String
+        get() = when {
+            engine != null && mustOwn != null -> "Own the game + install ${engine.name}"
+            engine != null -> "Requires ${engine.name}"
+            gameFiles == GameFiles.NONE -> "No extra setup — install and play"
+            mustOwn != null && requiredFiles != null -> "Bring your own ${mustOwn}"
+            mustOwn != null -> "Bring your own copy of $mustOwn"
+            else -> "Check the project page before installing"
+        }
+}
+
+@Serializable
+data class EngineRef(
+    val name: String,
+    val url: String? = null,
+    val note: String? = null,
+)
+
+@Serializable
+data class BuyLink(
+    val store: String,
+    val url: String,
 )
 
 @Serializable
