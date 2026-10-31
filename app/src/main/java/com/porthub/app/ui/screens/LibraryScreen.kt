@@ -25,6 +25,7 @@ import com.porthub.app.ui.components.GameCard
 import com.porthub.app.ui.components.glass
 import com.porthub.app.ui.theme.AppText
 import com.porthub.app.ui.theme.Ink
+import com.porthub.app.ui.theme.LocalAppLayout
 
 @Composable
 fun LibraryScreen(
@@ -32,6 +33,7 @@ fun LibraryScreen(
     favoriteIds: Set<String>,
     onOpen: (Game) -> Unit,
 ) {
+    val layout = LocalAppLayout.current
     val saved = games.filter { it.id in favoriteIds }
 
     Column(
@@ -42,14 +44,14 @@ fun LibraryScreen(
         Text(
             "Library",
             style = AppText.LargeTitle,
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp),
+            modifier = Modifier.padding(start = layout.gutter, end = layout.gutter, top = 8.dp),
         )
         Spacer(Modifier.height(4.dp))
         Text(
             if (saved.isEmpty()) "No saved ports" else "${saved.size} saved",
             style = AppText.Caption,
             color = Ink.TextTertiary,
-            modifier = Modifier.padding(horizontal = 20.dp),
+            modifier = Modifier.padding(horizontal = layout.gutter),
         )
         Spacer(Modifier.height(16.dp))
 
@@ -69,8 +71,12 @@ fun LibraryScreen(
             }
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 130.dp),
+                columns = GridCells.Adaptive(minSize = layout.gridMin),
+                contentPadding = PaddingValues(
+                    start = layout.gutter,
+                    end = layout.gutter,
+                    bottom = if (layout.isWide) 48.dp else 130.dp,
+                ),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {

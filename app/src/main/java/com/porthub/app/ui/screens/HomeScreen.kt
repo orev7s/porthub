@@ -49,6 +49,7 @@ import com.porthub.app.ui.components.pulse
 import com.porthub.app.ui.components.statusColor
 import com.porthub.app.ui.theme.AppText
 import com.porthub.app.ui.theme.Ink
+import com.porthub.app.ui.theme.LocalAppLayout
 
 @Composable
 fun HomeScreen(
@@ -58,6 +59,7 @@ fun HomeScreen(
     onSearch: () -> Unit,
     onSeeAll: () -> Unit,
 ) {
+    val layout = LocalAppLayout.current
     val featured = remember(games) { games.sortedByDescending { it.stars ?: 0 }.take(6) }
     val latest = remember(games) { games.take(10) }
 
@@ -65,11 +67,11 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding(),
-        contentPadding = PaddingValues(top = 10.dp, bottom = 130.dp),
+        contentPadding = PaddingValues(top = 10.dp, bottom = if (layout.isWide) 48.dp else 130.dp),
     ) {
         item {
             StaggeredAppear(index = 0) {
-                Column(Modifier.padding(horizontal = 20.dp)) {
+                Column(Modifier.padding(horizontal = layout.gutter)) {
                     Text("OPEN SOURCE · ANDROID", style = AppText.Eyebrow)
                     Spacer(Modifier.height(6.dp))
                     Row(
@@ -98,7 +100,7 @@ fun HomeScreen(
                 StaggeredAppear(index = 1) {
                     Column {
                         Spacer(Modifier.height(26.dp))
-                        SectionHeader("Featured", modifier = Modifier.padding(horizontal = 20.dp), action = "See all", onAction = onSeeAll)
+                        SectionHeader("Featured", modifier = Modifier.padding(horizontal = layout.gutter), action = "See all", onAction = onSeeAll)
                         Spacer(Modifier.height(12.dp))
                     }
                 }
@@ -106,11 +108,11 @@ fun HomeScreen(
             item {
                 StaggeredAppear(index = 2) {
                     LazyRow(
-                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        contentPadding = PaddingValues(horizontal = layout.gutter),
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
                         items(featured, key = { "feat-${it.id}" }) { game ->
-                            FeaturedCard(game = game, onClick = { onOpen(game) })
+                            FeaturedCard(game = game, onClick = { onOpen(game) }, width = if (layout.isWide) 360.dp else 292.dp, height = if (layout.isWide) 212.dp else 184.dp)
                         }
                     }
                 }
@@ -121,16 +123,16 @@ fun HomeScreen(
             StaggeredAppear(index = 3) {
                 Column {
                     Spacer(Modifier.height(28.dp))
-                    SectionHeader("Latest additions", modifier = Modifier.padding(horizontal = 20.dp))
+                    SectionHeader("Latest additions", modifier = Modifier.padding(horizontal = layout.gutter))
                     Spacer(Modifier.height(12.dp))
                 }
             }
         }
 
         if (loading && games.isEmpty()) {
-            items(4) { SkeletonRow(Modifier.padding(horizontal = 20.dp, vertical = 5.dp)) }
+            items(4) { SkeletonRow(Modifier.padding(horizontal = layout.gutter, vertical = 5.dp)) }
         } else if (games.isEmpty()) {
-            item { EmptyState(Modifier.padding(horizontal = 20.dp)) }
+            item { EmptyState(Modifier.padding(horizontal = layout.gutter)) }
         } else {
             items(latest, key = { "row-${it.id}" }) { game ->
                 GameRow(
@@ -165,12 +167,12 @@ private fun SearchBarButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun FeaturedCard(game: Game, onClick: () -> Unit) {
+private fun FeaturedCard(game: Game, onClick: () -> Unit, width: androidx.compose.ui.unit.Dp, height: androidx.compose.ui.unit.Dp) {
     val interaction = remember { MutableInteractionSource() }
     Box(
         modifier = Modifier
-            .width(292.dp)
-            .height(184.dp)
+            .width(width)
+            .height(height)
             .pressScale(pressedScale = 0.975f, interactionSource = interaction)
             .clip(RoundedCornerShape(26.dp))
             .clickable(interactionSource = interaction, indication = null) { onClick() },

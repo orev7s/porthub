@@ -8,6 +8,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -45,7 +47,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.porthub.app.data.Game
@@ -55,6 +56,7 @@ import com.porthub.app.ui.components.glass
 import com.porthub.app.ui.components.pressScale
 import com.porthub.app.ui.theme.AppText
 import com.porthub.app.ui.theme.Ink
+import com.porthub.app.ui.theme.LocalAppLayout
 
 private val filters = listOf(
     "all" to "All",
@@ -64,11 +66,13 @@ private val filters = listOf(
     PortType.SOURCE_PORT to "Source port",
 )
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SearchScreen(
     games: List<Game>,
     onOpen: (Game) -> Unit,
 ) {
+    val layout = LocalAppLayout.current
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf("all") }
     val focusRequester = remember { FocusRequester() }
@@ -90,28 +94,42 @@ fun SearchScreen(
             .fillMaxSize()
             .statusBarsPadding(),
     ) {
-        Text(
-            "Search",
-            style = AppText.LargeTitle,
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp),
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = layout.gutter, end = layout.gutter, top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Search", style = AppText.LargeTitle)
+            Text(
+                "${results.size} results",
+                style = AppText.Caption.copy(fontSize = 12.sp),
+                color = Ink.TextTertiary,
+            )
+        }
 
         Spacer(Modifier.height(14.dp))
 
         Row(
             modifier = Modifier
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = layout.gutter)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .glass(shape = RoundedCornerShape(18.dp), shadowElevation = 0.dp)
-                .padding(horizontal = 14.dp, vertical = 13.dp),
+                .clip(RoundedCornerShape(16.dp))
+                .glass(shape = RoundedCornerShape(16.dp), shadowElevation = 0.dp)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Icon(Icons.Rounded.Search, contentDescription = null, tint = Ink.TextTertiary, modifier = Modifier.size(19.dp))
+            Icon(Icons.Rounded.Search, contentDescription = null, tint = Ink.TextTertiary, modifier = Modifier.size(18.dp))
             Box(Modifier.weight(1f)) {
                 if (query.isEmpty()) {
-                    Text("Search games, console, engine…", style = AppText.Body.copy(fontSize = 15.sp), color = Ink.TextTertiary)
+                    Text(
+                        "Games, console, engine…",
+                        style = AppText.Body.copy(fontSize = 15.sp),
+                        color = Ink.TextTertiary,
+                        maxLines = 1,
+                    )
                 }
                 BasicTextField(
                     value = query,
@@ -138,24 +156,22 @@ fun SearchScreen(
             }
         }
 
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(12.dp))
 
-        Row(
+        // Chips wrap instead of running off the edge on narrow screens.
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = layout.gutter),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             filters.forEach { (key, label) ->
-                FilterPill(
-                    label = label,
-                    selected = filter == key,
-                    onClick = { filter = key },
-                )
+                FilterPill(label = label, selected = filter == key, onClick = { filter = key })
             }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(14.dp))
 
         if (results.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -167,8 +183,13 @@ fun SearchScreen(
             }
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 130.dp),
+                columns = GridCells.Adaptive(minSize = layout.gridMin),
+                contentPadding = PaddingValues(
+                    start = layout.gutter,
+                    end = layout.gutter,
+                    top = 4.dp,
+                    bottom = if (layout.isWide) 40.dp else 130.dp,
+                ),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
                 modifier = Modifier.fillMaxSize(),
@@ -177,10 +198,8 @@ fun SearchScreen(
                     GameCard(
                         game = game,
                         onClick = { onOpen(game) },
-                        modifier = Modifier
-                            .animateItem()
-                            .fillMaxWidth(),
-                        cardWidth = Dp.Unspecified,
+                        modifier = Modifier.animateItem().fillMaxWidth(),
+                        cardWidth = androidx.compose.ui.unit.Dp.Unspecified,
                     )
                 }
             }

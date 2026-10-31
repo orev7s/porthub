@@ -5,28 +5,29 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -65,10 +66,9 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.porthub.app.data.Game
-import com.porthub.app.data.GameFiles
 import com.porthub.app.data.PortStatus
-import com.porthub.app.data.Setup
 import com.porthub.app.data.PortType
+import com.porthub.app.data.Setup
 import com.porthub.app.ui.components.Chip
 import com.porthub.app.ui.components.CoverArt
 import com.porthub.app.ui.components.GlassButton
@@ -77,7 +77,9 @@ import com.porthub.app.ui.components.glass
 import com.porthub.app.ui.components.statusColor
 import com.porthub.app.ui.theme.AppText
 import com.porthub.app.ui.theme.Ink
+import com.porthub.app.ui.theme.LocalAppLayout
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DetailScreen(
     game: Game,
@@ -85,7 +87,9 @@ fun DetailScreen(
     onBack: () -> Unit,
     onToggleFavorite: () -> Unit,
 ) {
+    val layout = LocalAppLayout.current
     val context = LocalContext.current
+    val scroll = rememberScrollState()
     BackHandler(onBack = onBack)
 
     fun open(url: String?) {
@@ -95,44 +99,56 @@ fun DetailScreen(
         }
     }
 
-    val scroll = rememberScrollState()
-    // Hero drifts and fades as the page scrolls — the parallax cue people expect on iOS.
+    // Slides in on mount: one screen on stage at a time, so nothing can overlap.
+    val enter = remember { Animatable(1f) }
+    LaunchedEffect(Unit) {
+        enter.animateTo(0f, tween(320, easing = FastOutSlowInEasing))
+    }
+
     val heroLift by animateFloatAsState(
         targetValue = -(scroll.value * 0.28f),
         animationSpec = tween(0),
         label = "heroLift",
     )
     val heroAlpha by animateFloatAsState(
-        targetValue = (1f - scroll.value / 700f).coerceIn(0.15f, 1f),
+        targetValue = (1f - scroll.value / 700f).coerceIn(0.2f, 1f),
         animationSpec = tween(0),
         label = "heroAlpha",
     )
 
-    Box(Modifier.fillMaxSize()) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Ink.Background)
+            .graphicsLayer {
+                translationX = enter.value
+                alpha = 1f - enter.value * 0.55f
+            },
+    ) {
         Column(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(scroll),
         ) {
-            // ---------------------------------------------------------- hero
+            // ------------------------------------------------------------ hero
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .height(300.dp),
+                    .height(layout.heroHeight),
             ) {
                 val heroUrl = game.heroUrl
                 if (!heroUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current).data(heroUrl).crossfade(300).build(),
-                        contentDescription = null,
+                        model = ImageRequest.Builder(context).data(heroUrl).crossfade(300).build(),
+                        contentDescription = game.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer {
                                 translationY = heroLift
                                 alpha = heroAlpha
-                                scaleX = 1.04f
-                                scaleY = 1.04f
+                                scaleX = 1.05f
+                                scaleY = 1.05f
                             },
                     )
                 } else {
@@ -143,8 +159,8 @@ fun DetailScreen(
                         .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
-                                0f to Color.Black.copy(alpha = 0.35f),
-                                0.5f to Color.Transparent,
+                                0f to Color.Black.copy(alpha = 0.40f),
+                                0.55f to Color.Transparent,
                                 1f to Ink.Background,
                             ),
                         ),
@@ -153,45 +169,19 @@ fun DetailScreen(
 
             Column(
                 Modifier
-                    .padding(horizontal = 20.dp)
-                    .padding(top = 4.dp),
+                    .fillMaxWidth()
+                    .padding(horizontal = layout.gutter),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    CoverArt(
-                        game = game,
-                        modifier = Modifier.size(width = 84.dp, height = 108.dp),
-                        shape = RoundedCornerShape(18.dp),
-                    )
-                    Spacer(Modifier.width(14.dp))
-                    Column {
-                        Text(game.title, style = AppText.ScreenTitle)
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            listOfNotNull(game.originalTitle, game.year?.toString(), game.developer)
-                                .joinToString(" · "),
-                            style = AppText.Caption.copy(fontSize = 13.sp),
-                            color = Ink.TextTertiary,
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Chip(PortType.label(game.portType), tint = Ink.Accent, filled = true)
-                            Chip(PortStatus.label(game.status), tint = statusColor(game.status), filled = true)
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(18.dp))
+                HeaderBlock(game = game)
 
                 if (game.description.isNotBlank()) {
+                    Spacer(Modifier.height(18.dp))
                     Text(game.description, style = AppText.Body)
                 }
 
                 Spacer(Modifier.height(18.dp))
-
-                // ------------------------------------------------------- setup
                 SetupCard(setup = game.setup, onOpen = { open(it) })
 
-                // ----------------------------------------------------- downloads
                 if (game.downloads.isNotEmpty()) {
                     Spacer(Modifier.height(24.dp))
                     Text("GET IT", style = AppText.Eyebrow)
@@ -209,7 +199,12 @@ fun DetailScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Column(Modifier.weight(1f)) {
-                                Text(download.label, style = AppText.CardTitle.copy(fontSize = 15.sp))
+                                Text(
+                                    download.label,
+                                    style = AppText.CardTitle.copy(fontSize = 15.sp),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                                 val meta = listOfNotNull(
                                     download.version?.let { "v$it" },
                                     download.abi,
@@ -220,17 +215,12 @@ fun DetailScreen(
                                     Text(meta, style = AppText.Caption.copy(fontSize = 12.sp), color = Ink.TextTertiary)
                                 }
                             }
-                            Icon(
-                                Icons.Rounded.PlayArrow,
-                                contentDescription = null,
-                                tint = Ink.Accent,
-                                modifier = Modifier.size(20.dp),
-                            )
+                            Spacer(Modifier.width(10.dp))
+                            Icon(Icons.Rounded.PlayArrow, contentDescription = null, tint = Ink.Accent, modifier = Modifier.size(20.dp))
                         }
                     }
                 }
 
-                // --------------------------------------------------- screenshots
                 if (game.artwork.screenshots.isNotEmpty()) {
                     Spacer(Modifier.height(18.dp))
                     Text("SCREENS", style = AppText.Eyebrow)
@@ -250,27 +240,26 @@ fun DetailScreen(
                     }
                 }
 
-                // ------------------------------------------------------- links
                 Spacer(Modifier.height(24.dp))
                 Text("SOURCE", style = AppText.Eyebrow)
                 Spacer(Modifier.height(10.dp))
                 LinkRow("Repository", game.links.repo) { open(game.links.repo) }
-                LinkRow("Releases", game.links.releases ?: game.links.repo?.let { "$it/releases" }) {
-                    open(game.links.releases ?: game.links.repo?.let { "$it/releases" })
-                }
+                LinkRow("Releases", game.links.releases) { open(game.links.releases) }
                 game.links.website?.let { LinkRow("Website", it) { open(it) } }
                 game.links.discord?.let { LinkRow("Discord", it) { open(it) } }
 
                 Spacer(Modifier.height(18.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(22.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
                     game.license?.let { MetaText("License", it) }
                     game.lastUpdated?.let { MetaText("Updated", it) }
                     game.engine?.let { MetaText("Engine", it) }
                 }
 
-                Spacer(Modifier.height(30.dp))
+                Spacer(Modifier.height(26.dp))
 
-                // Never label a page "Download": say exactly where the button goes.
                 val apkUrl = game.downloads.firstOrNull()?.url
                 val target = apkUrl ?: game.links.releases ?: game.links.repo
                 val label = when {
@@ -298,7 +287,7 @@ fun DetailScreen(
             }
         }
 
-        // ------------------------------------------------------- floating controls
+        // ------------------------------------------------------ floating controls
         val heartScale = remember { Animatable(1f) }
         LaunchedEffect(isFavorite) {
             if (isFavorite) {
@@ -314,7 +303,7 @@ fun DetailScreen(
             modifier = Modifier
                 .statusBarsPadding()
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = layout.gutter, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             IconCircleButton(Icons.Rounded.ArrowBack, onClick = onBack)
@@ -327,6 +316,59 @@ fun DetailScreen(
                     scaleY = heartScale.value
                 },
             )
+        }
+    }
+}
+
+/**
+ * Cover + title side by side with a fixed cover size. The text column takes the
+ * remaining width and wraps, so long titles can never land on top of the artwork.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun HeaderBlock(game: Game) {
+    val layout = LocalAppLayout.current
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        CoverArt(
+            game = game,
+            modifier = Modifier.size(width = layout.coverWidth, height = layout.coverHeight),
+            shape = RoundedCornerShape(16.dp),
+        )
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                game.title,
+                style = AppText.ScreenTitle.copy(fontSize = if (layout.isWide) 26.sp else 21.sp),
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(5.dp))
+            Text(
+                text = listOfNotNull(game.originalTitle, game.year?.toString(), game.developer)
+                    .joinToString(" · ")
+                    .ifBlank { game.engine ?: "Android port" },
+                style = AppText.Caption.copy(fontSize = 12.5.sp),
+                color = Ink.TextTertiary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(9.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Chip(PortType.label(game.portType), tint = Ink.Accent, filled = true)
+                Chip(PortStatus.label(game.status), tint = statusColor(game.status), filled = true)
+                if (game.android.abis.isNotEmpty()) {
+                    Chip(game.android.abis.first(), tint = Ink.TextSecondary)
+                }
+            }
         }
     }
 }
@@ -345,12 +387,7 @@ private fun LinkRow(label: String, value: String?, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(label, style = AppText.Caption.copy(fontSize = 14.sp), color = Ink.TextSecondary)
-        Icon(
-            Icons.Rounded.KeyboardArrowRight,
-            contentDescription = null,
-            tint = Ink.TextTertiary,
-            modifier = Modifier.size(18.dp),
-        )
+        Icon(Icons.Rounded.KeyboardArrowRight, contentDescription = null, tint = Ink.TextTertiary, modifier = Modifier.size(18.dp))
     }
 }
 
@@ -359,10 +396,9 @@ private fun MetaText(label: String, value: String) {
     Column {
         Text(label.uppercase(), style = AppText.Eyebrow.copy(letterSpacing = 1.sp))
         Spacer(Modifier.height(3.dp))
-        Text(value, style = AppText.Caption.copy(fontSize = 13.sp), color = Ink.TextPrimary)
+        Text(value, style = AppText.Caption.copy(fontSize = 13.sp), color = Ink.TextPrimary, maxLines = 1)
     }
 }
-
 
 /* --------------------------------------------------------------- setup card */
 
@@ -372,15 +408,11 @@ private val difficultyColor = mapOf(
     "advanced" to Ink.Warning,
 )
 
-/**
- * One fixed-height card on every game page: a summary that never changes size, and
- * optional detail that only grows when the reader asks for it.
- */
 @Composable
 private fun SetupCard(setup: Setup?, onOpen: (String?) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val chevron by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
+        targetValue = if (expanded) 90f else 0f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "chevron",
     )
@@ -450,11 +482,7 @@ private fun SetupCard(setup: Setup?, onOpen: (String?) -> Unit) {
                                 .background(Color.White.copy(alpha = 0.08f)),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text(
-                                "${index + 1}",
-                                style = AppText.Caption.copy(fontSize = 10.sp),
-                                color = Ink.TextSecondary,
-                            )
+                            Text("${index + 1}", style = AppText.Caption.copy(fontSize = 10.sp), color = Ink.TextSecondary)
                         }
                         Spacer(Modifier.width(10.dp))
                         Text(step, style = AppText.Body.copy(fontSize = 13.5.sp))
@@ -466,10 +494,10 @@ private fun SetupCard(setup: Setup?, onOpen: (String?) -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         GlassButton("Get ${engine.name}", onClick = { onOpen(engine.url) }, primary = true)
                         Spacer(Modifier.width(10.dp))
-                        Column {
-                            Text(engine.name, style = AppText.Caption.copy(fontSize = 12.sp), color = Ink.TextPrimary)
+                        Column(Modifier.weight(1f)) {
+                            Text(engine.name, style = AppText.Caption.copy(fontSize = 12.sp), color = Ink.TextPrimary, maxLines = 1)
                             engine.note?.let {
-                                Text(it, style = AppText.Caption.copy(fontSize = 11.sp), color = Ink.TextTertiary)
+                                Text(it, style = AppText.Caption.copy(fontSize = 11.sp), color = Ink.TextTertiary, maxLines = 2)
                             }
                         }
                     }

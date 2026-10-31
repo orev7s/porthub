@@ -230,24 +230,40 @@ fun GameCard(
     game: Game,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    cardWidth: Dp = 148.dp,
+    cardWidth: Dp = Dp.Unspecified,
 ) {
     val interaction = remember { MutableInteractionSource() }
+    val setup = game.setup
+    val badgeIcon = when {
+        setup?.engine != null -> Icons.Rounded.Settings
+        setup?.gameFiles == GameFiles.OWNED || setup?.gameFiles == GameFiles.REQUIRED -> Icons.Rounded.Lock
+        else -> null
+    }
+
     Column(
         modifier = modifier
-            .then(if (cardWidth != Dp.Unspecified) Modifier.width(cardWidth) else Modifier)
+            .then(if (cardWidth != Dp.Unspecified) Modifier.width(cardWidth) else Modifier.fillMaxWidth())
             .pressScale(interactionSource = interaction)
-            .clip(RoundedCornerShape(22.dp))
+            .clip(CARD_SHAPE)
             .clickable(interactionSource = interaction, indication = null) { onClick() },
     ) {
-        Box {
-            CoverArt(game = game, modifier = Modifier.fillMaxWidth().aspectRatio(0.74f))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(0.72f),
+        ) {
+            CoverArt(
+                game = game,
+                modifier = Modifier.fillMaxSize(),
+                shape = CARD_SHAPE,
+            )
+
             Row(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(8.dp)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.42f))
+                    .background(Color.Black.copy(alpha = 0.46f))
                     .border(0.7.dp, Color.White.copy(alpha = 0.12f), CircleShape)
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -258,15 +274,10 @@ fun GameCard(
                     PortType.label(game.portType),
                     style = AppText.Caption.copy(fontSize = 11.sp),
                     color = Ink.TextPrimary,
+                    maxLines = 1,
                 )
             }
 
-            val setup = game.setup
-            val badgeIcon = when {
-                setup?.engine != null -> Icons.Rounded.Settings
-                setup?.gameFiles == GameFiles.OWNED || setup?.gameFiles == GameFiles.REQUIRED -> Icons.Rounded.Lock
-                else -> null
-            }
             if (badgeIcon != null) {
                 Box(
                     modifier = Modifier
@@ -274,7 +285,7 @@ fun GameCard(
                         .padding(8.dp)
                         .size(22.dp)
                         .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.45f))
+                        .background(Color.Black.copy(alpha = 0.46f))
                         .border(0.7.dp, Color.White.copy(alpha = 0.12f), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -287,19 +298,30 @@ fun GameCard(
                 }
             }
         }
+
         Spacer(Modifier.height(9.dp))
-        Text(game.title, style = AppText.CardTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(
+            text = game.title,
+            style = AppText.CardTitle.copy(fontSize = 14.sp),
+            maxLines = 2,
+            minLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth(),
+        )
         Spacer(Modifier.height(2.dp))
         Text(
-            listOfNotNull(game.originalTitle, game.year?.toString()).joinToString(" · ")
+            text = listOfNotNull(game.originalTitle, game.year?.toString()).joinToString(" · ")
                 .ifBlank { game.engine ?: "Android port" },
-            style = AppText.Caption.copy(fontSize = 12.sp),
+            style = AppText.Caption.copy(fontSize = 11.5.sp),
             color = Ink.TextTertiary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
+
+private val CARD_SHAPE = RoundedCornerShape(20.dp)
 
 @Composable
 fun GameRow(
