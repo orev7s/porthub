@@ -1,0 +1,8 @@
+# One repo per line. Scraped by tools/build_catalog.py.
+# Seed set, verified to exist via the GitHub API.
+
+HarbourMasters/Shipwright
+diasurgical/DevilutionX
+OpenMW/openmw
+XProger/OpenLara
+sm64pc/sm64ex

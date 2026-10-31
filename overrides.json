@@ -1,0 +1,71 @@
+{
+  "_comment": "Facts GitHub cannot tell us: which retail game a port reconstructs, its year and publisher. Keyed by owner/repo. Hand-curated entries win over scraped ones.",
+
+  "HarbourMasters/Shipwright": {
+    "title": "Ship of Harkinian",
+    "originalTitle": "The Legend of Zelda: Ocarina of Time",
+    "year": 1998,
+    "platforms": ["N64"],
+    "developer": "Nintendo",
+    "portType": "decompilation",
+    "status": "stable",
+    "engine": "libultraship",
+    "tags": ["Zelda", "60 fps", "widescreen", "mods"],
+    "artwork": { "accent": "#7FA34A" },
+    "android": { "requiresGameFiles": "owned" },
+    "links": { "website": "https://www.shipofharkinian.com" }
+  },
+
+  "diasurgical/DevilutionX": {
+    "title": "DevilutionX",
+    "originalTitle": "Diablo",
+    "year": 1996,
+    "platforms": ["PC"],
+    "developer": "Blizzard North",
+    "portType": "engine",
+    "status": "stable",
+    "tags": ["RPG", "co-op", "controller"],
+    "artwork": { "accent": "#B4342C" },
+    "android": { "requiresGameFiles": "owned" }
+  },
+
+  "OpenMW/openmw": {
+    "title": "OpenMW",
+    "originalTitle": "The Elder Scrolls III: Morrowind",
+    "year": 2002,
+    "platforms": ["PC"],
+    "developer": "Bethesda Game Studios",
+    "portType": "engine",
+    "status": "stable",
+    "tags": ["RPG", "open world", "mods"],
+    "steamAppId": 22320,
+    "artwork": { "accent": "#C8A165" },
+    "android": { "requiresGameFiles": "owned" }
+  },
+
+  "XProger/OpenLara": {
+    "title": "OpenLara",
+    "originalTitle": "Tomb Raider",
+    "year": 1996,
+    "platforms": ["PS1", "Saturn", "PC"],
+    "developer": "Core Design",
+    "portType": "engine",
+    "status": "beta",
+    "tags": ["action", "adventure", "experimental"],
+    "artwork": { "accent": "#96703F" },
+    "android": { "requiresGameFiles": "owned" }
+  },
+
+  "sm64pc/sm64ex": {
+    "title": "sm64ex",
+    "originalTitle": "Super Mario 64",
+    "year": 1996,
+    "platforms": ["N64"],
+    "developer": "Nintendo",
+    "portType": "decompilation",
+    "status": "stable",
+    "tags": ["platformer", "60 fps", "mods"],
+    "artwork": { "accent": "#3E7BD6" },
+    "android": { "requiresGameFiles": "owned" }
+  }
+}
